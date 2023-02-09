@@ -40,9 +40,7 @@ class TestDeprecation(object):
         warnings.simplefilter("default", RemovedInFlaskBB3)
         only_a_drill()
 
-        expected = "only_a_drill is deprecated and will be removed in version {}. This is only a drill".format(  # noqa
-            NEXT_VERSION_STRING
-        )
+        expected = f"only_a_drill is deprecated and will be removed in version {NEXT_VERSION_STRING}. This is only a drill"
         assert len(recwarn) == 1
         assert expected in str(recwarn[0].message)
 

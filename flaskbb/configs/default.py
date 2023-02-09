@@ -9,9 +9,12 @@
     :copyright: (c) 2014 by the FlaskBB Team.
     :license: BSD, see LICENSE for more details.
 """
+
 import os
 import sys
 import datetime
+
+
 
 
 class DefaultConfig(object):
@@ -153,8 +156,7 @@ class DefaultConfig(object):
     # For PostgresSQL:
     #SQLALCHEMY_DATABASE_URI = "postgresql://flaskbb@localhost:5432/flaskbb"
     # For SQLite:
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + basedir + '/' + \
-                              'flaskbb.sqlite'
+    SQLALCHEMY_DATABASE_URI = f'sqlite:///{basedir}/flaskbb.sqlite'
 
     # This option will be removed as soon as Flask-SQLAlchemy removes it.
     # At the moment it is just used to suppress the super annoying warning

@@ -64,24 +64,22 @@ class ManagementSettings(MethodView):
             ``form``, ``old_settings``, ``plugin_obj``, ``active_nav``
         """
         # Any ideas how to do this better?
-        slug = slug if slug else 'general'
+        slug = slug or 'general'
         active_nav = {}  # used to build the navigation
         plugin_obj = None
         if plugin is not None:
             plugin_obj = PluginRegistry.query.filter_by(name=plugin
                                                         ).first_or_404()
-            active_nav.update(
-                {
-                    'key': plugin_obj.name,
-                    'title': plugin_obj.name.title()
-                }
-            )
+            active_nav |= {
+                'key': plugin_obj.name,
+                'title': plugin_obj.name.title(),
+            }
             form = plugin_obj.get_settings_form()
             old_settings = plugin_obj.settings
 
         elif slug is not None:
             group_obj = SettingsGroup.query.filter_by(key=slug).first_or_404()
-            active_nav.update({'key': group_obj.key, 'title': group_obj.name})
+            active_nav |= {'key': group_obj.key, 'title': group_obj.name}
             form = Setting.get_form(group_obj)()
             old_settings = Setting.get_settings(group_obj)
 
@@ -461,10 +459,10 @@ class BanUser(MethodView):
                     })
 
             return jsonify(
-                message="{} users banned.".format(len(data)),
+                message=f"{len(data)} users banned.",
                 category="success",
                 data=data,
-                status=200
+                status=200,
             )
 
         user = User.query.filter_by(id=user_id).first_or_404()
@@ -474,7 +472,7 @@ class BanUser(MethodView):
             flash(_("A moderator cannot ban an admin user."), "danger")
             return redirect(url_for("management.overview"))
 
-        if not current_user.id == user.id and user.ban():
+        if current_user.id != user.id and user.ban():
             flash(_("User is now banned."), "success")
         else:
             flash(_("Could not ban user."), "danger")
@@ -662,7 +660,7 @@ class DeleteGroup(MethodView):
                 )
 
             # TODO: Get rid of magic numbers
-            if not (set(ids) & set(["1", "2", "3", "4", "5", "6"])):
+            if not set(ids) & {"1", "2", "3", "4", "5", "6"}:
                 data = []
                 for group in Group.query.filter(Group.id.in_(ids)).all():
                     group.delete()
@@ -677,10 +675,10 @@ class DeleteGroup(MethodView):
                     )
 
                 return jsonify(
-                    message="{} groups deleted.".format(len(data)),
+                    message=f"{len(data)} groups deleted.",
                     category="success",
                     data=data,
-                    status=200
+                    status=200,
                 )
             return jsonify(
                 message=_("You cannot delete one of the standard groups."),
@@ -979,10 +977,11 @@ class UnreadReports(MethodView):
 
     def get(self):
         page = request.args.get("page", 1, type=int)
-        reports = Report.query.\
-            filter(Report.zapped == None).\
-            order_by(Report.id.desc()).\
-            paginate(page, flaskbb_config['USERS_PER_PAGE'], False)
+        reports = (
+            Report.query.filter(Report.zapped is None)
+            .order_by(Report.id.desc())
+            .paginate(page, flaskbb_config['USERS_PER_PAGE'], False)
+        )
 
         return render_template("management/reports.html", reports=reports)
 
@@ -1027,10 +1026,10 @@ class MarkReportRead(MethodView):
                 )
 
             return jsonify(
-                message="{} reports marked as read.".format(len(data)),
+                message=f"{len(data)} reports marked as read.",
                 category="success",
                 data=data,
-                status=200
+                status=200,
             )
 
         # mark single report as read
@@ -1050,7 +1049,7 @@ class MarkReportRead(MethodView):
             return redirect_or_next(url_for("management.reports"))
 
         # mark all as read
-        reports = Report.query.filter(Report.zapped == None).all()
+        reports = Report.query.filter(Report.zapped is None).all()
         report_list = []
         for report in reports:
             report.zapped_by = current_user.id
@@ -1100,10 +1099,10 @@ class DeleteReport(MethodView):
                     )
 
             return jsonify(
-                message="{} reports deleted.".format(len(data)),
+                message=f"{len(data)} reports deleted.",
                 category="success",
                 data=data,
-                status=200
+                status=200,
             )
 
         report = Report.query.filter_by(id=report_id).first_or_404()
@@ -1127,7 +1126,7 @@ class CeleryStatus(MethodView):
     def get(self):
         celery_inspect = celery.control.inspect()
         try:
-            celery_running = True if celery_inspect.ping() else False
+            celery_running = bool(celery_inspect.ping())
         except Exception:
             # catching Exception is bad, and just catching ConnectionError
             # from redis is also bad because you can run celery with other
@@ -1154,19 +1153,19 @@ class ManagementOverview(MethodView):
         banned_users = User.query.filter(
             Group.banned == True, Group.id == User.primary_group_id
         ).count()
-        if not current_app.config["REDIS_ENABLED"]:
-            online_users = User.query.filter(User.lastseen >= time_diff()
-                                             ).count()
-        else:
-            online_users = len(get_online_users())
+        online_users = (
+            len(get_online_users())
+            if current_app.config["REDIS_ENABLED"]
+            else User.query.filter(User.lastseen >= time_diff()).count()
+        )
+        unread_reports = (
+            Report.query.filter(Report.zapped is None)
+            .order_by(Report.id.desc())
+            .count()
+        )
 
-        unread_reports = Report.query.\
-            filter(Report.zapped == None).\
-            order_by(Report.id.desc()).\
-            count()
-
-        python_version = "{}.{}.{}".format(
-            sys.version_info[0], sys.version_info[1], sys.version_info[2]
+        python_version = (
+            f"{sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
         )
 
         stats = {

@@ -37,10 +37,7 @@ def template_hook(name, silent=True, is_markup=True, **kwargs):
             return ""
         raise
 
-    if is_markup:
-        return Markup(result)
-
-    return result
+    return Markup(result) if is_markup else result
 
 
 def validate_plugin(name):
@@ -66,12 +63,10 @@ def remove_zombie_plugins_from_db():
 
     plugin_names = [p.name for p in PluginRegistry.query.all()]
 
-    remove_me = []
-    for p in plugin_names:
-        if p in d_db_plugins and p not in d_fs_plugins:
-            remove_me.append(p)
-
-    if len(remove_me) > 0:
+    remove_me = [
+        p for p in plugin_names if p in d_db_plugins and p not in d_fs_plugins
+    ]
+    if remove_me:
         PluginRegistry.query.filter(PluginRegistry.name.in_(remove_me)).delete(
             synchronize_session="fetch"
         )

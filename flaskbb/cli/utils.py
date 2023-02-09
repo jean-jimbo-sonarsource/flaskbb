@@ -39,8 +39,7 @@ class FlaskBBCLIError(click.ClickException):
     def show(self, file=None):
         if file is None:
             file = click._compat.get_text_stderr()
-        click.secho("error: %s" % self.format_message(), file=file,
-                    **self.styles)
+        click.secho(f"error: {self.format_message()}", file=file, **self.styles)
 
 
 class EmailType(click.ParamType):
@@ -55,7 +54,7 @@ class EmailType(click.ParamType):
         if re.match(_email_regex, value):
             return value
         else:
-            self.fail(("invalid email: %s" % value), param, ctx)
+            self.fail(f"invalid email: {value}", param, ctx)
 
     def __repr__(self):
         return "email"
@@ -70,7 +69,7 @@ def validate_plugin(plugin):
     # list_name holds all plugin names, also the disabled ones (they won't do
     # anything as they are set as 'blocked' on pluggy)
     if plugin not in current_app.pluggy.list_name():
-        raise FlaskBBCLIError("Plugin {} not found.".format(plugin), fg="red")
+        raise FlaskBBCLIError(f"Plugin {plugin} not found.", fg="red")
     return True
 
 
@@ -79,7 +78,7 @@ def validate_theme(theme):
     try:
         get_theme(theme)
     except KeyError:
-        raise FlaskBBCLIError("Theme {} not found.".format(theme), fg="red")
+        raise FlaskBBCLIError(f"Theme {theme} not found.", fg="red")
 
 
 def get_cookiecutter():
@@ -145,13 +144,17 @@ def prompt_config_path(config_path):
     :param config_path: The path to the configuration.
     """
     click.secho("The path to save this configuration file.", fg="cyan")
-    while True:
-        if os.path.exists(config_path) and click.confirm(click.style(
-            "Config {cfg} exists. Do you want to overwrite it?"
-            .format(cfg=config_path), fg="magenta")
-        ):
-            break
-
+    while not (
+        os.path.exists(config_path)
+        and click.confirm(
+            click.style(
+                "Config {cfg} exists. Do you want to overwrite it?".format(
+                    cfg=config_path
+                ),
+                fg="magenta",
+            )
+        )
+    ):
         config_path = click.prompt(
             click.style("Save to", fg="magenta"),
             default=config_path)

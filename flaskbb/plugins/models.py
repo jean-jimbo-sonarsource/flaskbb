@@ -40,9 +40,7 @@ class PluginStore(CRUDMixin, db.Model):
     )
 
     def __repr__(self):
-        return '<PluginSetting plugin={} key={} value={}>'.format(
-            self.plugin.name, self.key, self.value
-        )
+        return f'<PluginSetting plugin={self.plugin.name} key={self.key} value={self.value}>'
 
     @classmethod
     def get_or_create(cls, plugin_id, key):
@@ -51,9 +49,7 @@ class PluginStore(CRUDMixin, db.Model):
         """
         obj = cls.query.filter_by(plugin_id=plugin_id, key=key).first()
 
-        if obj is not None:
-            return obj
-        return PluginStore()
+        return obj if obj is not None else PluginStore()
 
 
 class PluginRegistry(CRUDMixin, db.Model):
@@ -81,14 +77,12 @@ class PluginRegistry(CRUDMixin, db.Model):
     def is_installable(self):
         """Returns True if the plugin has settings that can be installed."""
         plugin_module = current_app.pluggy.get_plugin(self.name)
-        return True if plugin_module.SETTINGS else False
+        return bool(plugin_module.SETTINGS)
 
     @property
     def is_installed(self):
         """Returns True if the plugin is installed."""
-        if self.settings:
-            return True
-        return False
+        return bool(self.settings)
 
     def get_settings_form(self):
         """Generates a settings form based on the settings."""
@@ -139,4 +133,4 @@ class PluginRegistry(CRUDMixin, db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return '<Plugin name={} enabled={}>'.format(self.name, self.enabled)
+        return f'<Plugin name={self.name} enabled={self.enabled}>'

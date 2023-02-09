@@ -69,7 +69,7 @@ class Group(db.Model, CRUDMixin):
         """Set to a unique key specific to the object in the database.
         Required for cache.memoize() to work across requests.
         """
-        return "<{} {} {}>".format(self.__class__.__name__, self.id, self.name)
+        return f"<{self.__class__.__name__} {self.id} {self.name}>"
 
     @classmethod
     def selectable_groups_choices(cls):
@@ -168,12 +168,7 @@ class User(db.Model, UserMixin, CRUDMixin):
         return ``True``. Is the option activated, it will, depending on the
         state of the account, either return ``True`` or ``False``.
         """
-        if flaskbb_config["ACTIVATE_ACCOUNT"]:
-            if self.activated:
-                return True
-            return False
-
-        return True
+        return bool(self.activated) if flaskbb_config["ACTIVATE_ACCOUNT"] else True
 
     @property
     def last_post(self):
@@ -200,9 +195,7 @@ class User(db.Model, UserMixin, CRUDMixin):
     def days_registered(self):
         """Returns the amount of days the user is registered."""
         days_registered = (time_utcnow() - self.date_joined).days
-        if not days_registered:
-            return 1
-        return days_registered
+        return days_registered or 1
 
     @property
     def topic_count(self):
@@ -226,7 +219,7 @@ class User(db.Model, UserMixin, CRUDMixin):
         """Set to a unique key specific to the object in the database.
         Required for cache.memoize() to work across requests.
         """
-        return "<{} {}>".format(self.__class__.__name__, self.username)
+        return f"<{self.__class__.__name__} {self.username}>"
 
     def _get_password(self):
         """Returns the hashed password."""
@@ -300,13 +293,15 @@ class User(db.Model, UserMixin, CRUDMixin):
         :rtype: flask_sqlalchemy.Pagination
         """
         group_ids = [g.id for g in viewer.groups]
-        topics = Topic.query.\
-            filter(Topic.user_id == self.id,
-                   Forum.id == Topic.forum_id,
-                   Forum.groups.any(Group.id.in_(group_ids))).\
-            order_by(Topic.id.desc()).\
-            paginate(page, flaskbb_config['TOPICS_PER_PAGE'], False)
-        return topics
+        return (
+            Topic.query.filter(
+                Topic.user_id == self.id,
+                Forum.id == Topic.forum_id,
+                Forum.groups.any(Group.id.in_(group_ids)),
+            )
+            .order_by(Topic.id.desc())
+            .paginate(page, flaskbb_config['TOPICS_PER_PAGE'], False)
+        )
 
     def all_posts(self, page, viewer):
         """Posts made by a given user, most recent first.
@@ -317,14 +312,16 @@ class User(db.Model, UserMixin, CRUDMixin):
         :rtype: flask_sqlalchemy.Pagination
         """
         group_ids = [g.id for g in viewer.groups]
-        posts = Post.query.\
-            filter(Post.user_id == self.id,
-                   Post.topic_id == Topic.id,
-                   Topic.forum_id == Forum.id,
-                   Forum.groups.any(Group.id.in_(group_ids))).\
-            order_by(Post.id.desc()).\
-            paginate(page, flaskbb_config['TOPICS_PER_PAGE'], False)
-        return posts
+        return (
+            Post.query.filter(
+                Post.user_id == self.id,
+                Post.topic_id == Topic.id,
+                Topic.forum_id == Forum.id,
+                Forum.groups.any(Group.id.in_(group_ids)),
+            )
+            .order_by(Post.id.desc())
+            .paginate(page, flaskbb_config['TOPICS_PER_PAGE'], False)
+        )
 
     def track_topic(self, topic):
         """Tracks the specified topic.
@@ -387,10 +384,7 @@ class User(db.Model, UserMixin, CRUDMixin):
     @cache.memoize()
     def get_permissions(self, exclude=None):
         """Returns a dictionary with all permissions the user has"""
-        if exclude:
-            exclude = set(exclude)
-        else:
-            exclude = set()
+        exclude = set(exclude) if exclude else set()
         exclude.update(['id', 'name', 'description'])
 
         perms = {}
@@ -486,10 +480,7 @@ class Guest(AnonymousUserMixin):
     @cache.memoize()
     def get_permissions(self, exclude=None):
         """Returns a dictionary with all permissions the user has"""
-        if exclude:
-            exclude = set(exclude)
-        else:
-            exclude = set()
+        exclude = set(exclude) if exclude else set()
         exclude.update(['id', 'name', 'description'])
 
         perms = {}

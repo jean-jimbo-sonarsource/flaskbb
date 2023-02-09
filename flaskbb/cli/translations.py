@@ -34,11 +34,12 @@ def new_translation(lang, plugin):
     of the language, like, "de_AT"."""
     if plugin:
         validate_plugin(plugin)
-        click.secho("[+] Adding new language {} for plugin {}..."
-                    .format(lang, plugin), fg="cyan")
+        click.secho(
+            f"[+] Adding new language {lang} for plugin {plugin}...", fg="cyan"
+        )
         add_plugin_translations(plugin, lang)
     else:
-        click.secho("[+] Adding new language {}...".format(lang), fg="cyan")
+        click.secho(f"[+] Adding new language {lang}...", fg="cyan")
         add_translations(lang)
 
 
@@ -51,8 +52,7 @@ def update_translation(is_all, plugin):
     """Updates all translations."""
     if plugin is not None:
         validate_plugin(plugin)
-        click.secho("[+] Updating language files for plugin {}..."
-                    .format(plugin), fg="cyan")
+        click.secho(f"[+] Updating language files for plugin {plugin}...", fg="cyan")
         update_plugin_translations(plugin)
     else:
         click.secho("[+] Updating language files...", fg="cyan")
@@ -68,8 +68,7 @@ def compile_translation(is_all, plugin):
     """Compiles the translations."""
     if plugin is not None:
         validate_plugin(plugin)
-        click.secho("[+] Compiling language files for plugin {}..."
-                    .format(plugin), fg="cyan")
+        click.secho(f"[+] Compiling language files for plugin {plugin}...", fg="cyan")
         compile_plugin_translations(plugin)
     else:
         click.secho("[+] Compiling language files...", fg="cyan")

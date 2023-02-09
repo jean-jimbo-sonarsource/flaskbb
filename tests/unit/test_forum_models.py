@@ -75,7 +75,7 @@ def test_category_get_forums(forum, user):
 
         # Check if it is a list because in a category there are normally more
         # than one forum in it (not in these tests)
-        assert isinstance(forums, list) is True
+        assert isinstance(forums, list)
 
         assert forums == [(forum, None)]
         assert cat == category
@@ -87,7 +87,7 @@ def test_category_get_forums(forum, user):
 
         # Check if it is a list because in a category there are normally more
         # than one forum in it (not in these tests)
-        assert isinstance(forums, list) is True
+        assert isinstance(forums, list)
 
         assert forums == [(forum, None)]
         assert cat == category

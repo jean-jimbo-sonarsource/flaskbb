@@ -12,7 +12,7 @@ from flaskbb.user.services.update import DefaultEmailUpdateHandler
 
 
 def random_email():
-    return "{}@not.real.at.all".format(str(uuid4()))
+    return f"{str(uuid4())}@not.real.at.all"
 
 
 class TestDefaultEmailUpdateHandler(object):

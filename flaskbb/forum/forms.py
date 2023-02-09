@@ -50,7 +50,7 @@ class ReplyForm(PostForm):
     )
 
     def __init__(self, *args, **kwargs):
-        self.post = kwargs.get("obj", None)
+        self.post = kwargs.get("obj")
         PostForm.__init__(self, *args, **kwargs)
 
     def save(self, user, topic):
@@ -206,10 +206,8 @@ class SearchPageForm(FlaskForm):
 
         query = self.search_query.data
         types = self.search_types.data
-        results = {}
-
-        for search_type in search_actions.keys():
-            if search_type in types:
-                results[search_type] = search_actions[search_type](query)
-
-        return results
+        return {
+            search_type: search_actions[search_type](query)
+            for search_type in search_actions
+            if search_type in types
+        }

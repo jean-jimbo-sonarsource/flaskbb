@@ -101,17 +101,16 @@ class RecaptchaValidator(object):
 class RecaptchaWidget(object):
 
     def recaptcha_html(self, public_key):
-        html = current_app.config.get('RECAPTCHA_HTML')
-        if html:
+        if html := current_app.config.get('RECAPTCHA_HTML'):
             return Markup(html)
         params = current_app.config.get('RECAPTCHA_PARAMETERS')
         script = RECAPTCHA_SCRIPT
         if params:
-            script += u'?' + url_encode(params)
+            script += f'?{url_encode(params)}'
 
         attrs = current_app.config.get('RECAPTCHA_DATA_ATTRS', {})
         attrs['sitekey'] = public_key
-        snippet = u' '.join([u'data-%s="%s"' % (k, attrs[k]) for k in attrs])
+        snippet = u' '.join([f'data-{k}="{attrs[k]}"' for k in attrs])
         return Markup(RECAPTCHA_TEMPLATE % (script, snippet))
 
     def __call__(self, field, error=None, **kwargs):

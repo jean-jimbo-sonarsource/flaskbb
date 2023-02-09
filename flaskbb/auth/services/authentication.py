@@ -91,10 +91,7 @@ class DefaultFlaskBBAuthProvider(AuthenticationProvider):
         ).first()
 
         if user is not None:
-            if check_password_hash(user.password, secret):
-                return user
-            return None
-
+            return user if check_password_hash(user.password, secret) else None
         check_password_hash("dummy password", secret)
         return None
 

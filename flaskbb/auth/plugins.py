@@ -114,8 +114,11 @@ def flaskbb_registration_post_processor(user):
             SendActivationPostProcessor(account_activator_factory())
         )
     else:
-        handlers.append(AutologinPostProcessor())
-        handlers.append(AutoActivateUserPostProcessor(db, flaskbb_config))
-
+        handlers.extend(
+            (
+                AutologinPostProcessor(),
+                AutoActivateUserPostProcessor(db, flaskbb_config),
+            )
+        )
     for handler in handlers:
         handler.post_process(user)

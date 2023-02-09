@@ -116,7 +116,7 @@ class Report(db.Model, CRUDMixin):
     zapper = db.relationship("User", lazy="joined", foreign_keys=[zapped_by])
 
     def __repr__(self):
-        return "<{} {}>".format(self.__class__.__name__, self.id)
+        return f"<{self.__class__.__name__} {self.id}>"
 
     def save(self, post=None, user=None):
         """Saves a report.
@@ -190,7 +190,7 @@ class Post(HideableCRUDMixin, db.Model):
         """Set to a unique key specific to the object in the database.
         Required for cache.memoize() to work across requests.
         """
-        return "<{} {}>".format(self.__class__.__name__, self.id)
+        return f"<{self.__class__.__name__} {self.id}>"
 
     def is_first_post(self):
         """Checks whether this post is the first post in the topic or not."""
@@ -290,46 +290,45 @@ class Post(HideableCRUDMixin, db.Model):
         return self
 
     def _deal_with_last_post(self):
-        if self.topic.last_post == self:
-
+        if self.topic.last_post != self:
+            return
             # update the last post in the forum
-            if self.topic.last_post == self.topic.forum.last_post:
-                # We need the second last post in the forum here,
-                # because the last post will be deleted
-                second_last_post = Post.query.filter(
+        if self.topic.last_post == self.topic.forum.last_post:
+            if (
+                second_last_post := Post.query.filter(
                     Post.topic_id == Topic.id,
                     Topic.forum_id == self.topic.forum.id,
                     Post.hidden != True,
-                    Post.id != self.id
-                ).order_by(
-                    Post.id.desc()
-                ).limit(1).first()
-
-                if second_last_post:
-                    # now lets update the second last post to the last post
-                    self.topic.forum.last_post = second_last_post
-                    self.topic.forum.last_post_title = second_last_post.topic.title  # noqa
-                    self.topic.forum.last_post_user = second_last_post.user
-                    self.topic.forum.last_post_username = second_last_post.username  # noqa
-                    self.topic.forum.last_post_created = second_last_post.date_created  # noqa
-                else:
-                    self.topic.forum.last_post = None
-                    self.topic.forum.last_post_title = None
-                    self.topic.forum.last_post_user = None
-                    self.topic.forum.last_post_username = None
-                    self.topic.forum.last_post_created = None
-
-            # check if there is a second last post in this topic
-            if self.topic.second_last_post is not None:
-                # Now the second last post will be the last post
-                self.topic.last_post_id = self.topic.second_last_post
-
-            # there is no second last post, now the last post is also the
-            # first post
+                    Post.id != self.id,
+                )
+                .order_by(Post.id.desc())
+                .limit(1)
+                .first()
+            ):
+                # now lets update the second last post to the last post
+                self.topic.forum.last_post = second_last_post
+                self.topic.forum.last_post_title = second_last_post.topic.title  # noqa
+                self.topic.forum.last_post_user = second_last_post.user
+                self.topic.forum.last_post_username = second_last_post.username  # noqa
+                self.topic.forum.last_post_created = second_last_post.date_created  # noqa
             else:
-                self.topic.last_post = self.topic.first_post
+                self.topic.forum.last_post = None
+                self.topic.forum.last_post_title = None
+                self.topic.forum.last_post_user = None
+                self.topic.forum.last_post_username = None
+                self.topic.forum.last_post_created = None
 
-            self.topic.last_updated = self.topic.last_post.date_created
+        # check if there is a second last post in this topic
+        if self.topic.second_last_post is not None:
+            # Now the second last post will be the last post
+            self.topic.last_post_id = self.topic.second_last_post
+
+        # there is no second last post, now the last post is also the
+        # first post
+        else:
+            self.topic.last_post = self.topic.first_post
+
+        self.topic.last_updated = self.topic.last_post.date_created
 
     def _update_counts(self):
         if self.hidden:
@@ -453,9 +452,11 @@ class Topic(HideableCRUDMixin, db.Model):
     @property
     def url(self):
         """Returns the slugified url for the topic."""
-        if not self.slug:
-            return url_for("forum.view_topic", topic_id=self.id)
-        return url_for("forum.view_topic", topic_id=self.id, slug=self.slug)
+        return (
+            url_for("forum.view_topic", topic_id=self.id, slug=self.slug)
+            if self.slug
+            else url_for("forum.view_topic", topic_id=self.id)
+        )
 
     def __init__(self, title=None, user=None, content=None):
         """Creates a topic object with some initial values.
@@ -482,7 +483,7 @@ class Topic(HideableCRUDMixin, db.Model):
         """Set to a unique key specific to the object in the database.
         Required for cache.memoize() to work across requests.
         """
-        return "<{} {}>".format(self.__class__.__name__, self.id)
+        return f"<{self.__class__.__name__} {self.id}>"
 
     def is_first_post(self, post):
         """Checks if the post is the first post in the topic.
@@ -516,8 +517,7 @@ class Topic(HideableCRUDMixin, db.Model):
 
     @classmethod
     def get_topic(cls, topic_id, user):
-        topic = Topic.query.filter_by(id=topic_id).first_or_404()
-        return topic
+        return Topic.query.filter_by(id=topic_id).first_or_404()
 
     def tracker_needs_update(self, forumsread, topicsread):
         """Returns True if the topicsread tracker needs an update.
@@ -576,7 +576,7 @@ class Topic(HideableCRUDMixin, db.Model):
             return False
 
         topicsread = TopicsRead.query.\
-            filter(TopicsRead.user_id == user.id,
+                filter(TopicsRead.user_id == user.id,
                    TopicsRead.topic_id == self.id).first()
 
         if not self.tracker_needs_update(forumsread, topicsread):
@@ -589,32 +589,18 @@ class Topic(HideableCRUDMixin, db.Model):
         # A new post has been submitted that the user hasn't read.
         # Updating...
         if topicsread:
-            logger.debug("Updating existing TopicsRead '{}' object."
-                         .format(topicsread))
-            topicsread.last_read = time_utcnow()
-            topicsread.save()
-            updated = True
-
-        # The user has not visited the topic before. Inserting him in
-        # the TopicsRead model.
-        elif not topicsread:
+            logger.debug(f"Updating existing TopicsRead '{topicsread}' object.")
+        else:
             logger.debug("Creating new TopicsRead object.")
             topicsread = TopicsRead()
             topicsread.user = user
             topicsread.topic = self
             topicsread.forum = self.forum
-            topicsread.last_read = time_utcnow()
-            topicsread.save()
-            updated = True
+        updated = True
 
-        # No unread posts
-        else:
-            updated = False
-
-        # Save True/False if the forums tracker has been updated.
-        updated = forum.update_read(user, forumsread, topicsread)
-
-        return updated
+        topicsread.last_read = time_utcnow()
+        topicsread.save()
+        return forum.update_read(user, forumsread, topicsread)
 
     def recalculate(self):
         """Recalculates the post count in the topic."""
@@ -910,9 +896,9 @@ class Forum(db.Model, CRUDMixin):
     @property
     def url(self):
         """Returns the slugified url for the forum"""
-        if self.external:
-            return self.external
-        return url_for("forum.view_forum", forum_id=self.id, slug=self.slug)
+        return self.external or url_for(
+            "forum.view_forum", forum_id=self.id, slug=self.slug
+        )
 
     @property
     def last_post_url(self):
@@ -924,35 +910,31 @@ class Forum(db.Model, CRUDMixin):
         """Set to a unique key specific to the object in the database.
         Required for cache.memoize() to work across requests.
         """
-        return "<{} {}>".format(self.__class__.__name__, self.id)
+        return f"<{self.__class__.__name__} {self.id}>"
 
     def update_last_post(self, commit=True):
         """Updates the last post in the forum."""
         last_post = Post.query.\
-            filter(Post.topic_id == Topic.id,
+                filter(Post.topic_id == Topic.id,
                    Topic.forum_id == self.id).\
-            order_by(Post.date_created.desc()).\
-            limit(1)\
-            .first()
+                order_by(Post.date_created.desc()).\
+                limit(1)\
+                .first()
 
         # Last post is none when there are no topics in the forum
-        if last_post is not None:
-
-            # a new last post was found in the forum
-            if last_post != self.last_post:
-                self.last_post = last_post
-                self.last_post_title = last_post.topic.title
-                self.last_post_user_id = last_post.user_id
-                self.last_post_username = last_post.username
-                self.last_post_created = last_post.date_created
-
-        # No post found..
-        else:
+        if last_post is None:
             self.last_post = None
             self.last_post_title = None
             self.last_post_user = None
             self.last_post_username = None
             self.last_post_created = None
+
+        elif last_post != self.last_post:
+            self.last_post = last_post
+            self.last_post_title = last_post.topic.title
+            self.last_post_user_id = last_post.user_id
+            self.last_post_username = last_post.username
+            self.last_post_created = last_post.date_created
 
         if commit:
             db.session.commit()
@@ -985,20 +967,34 @@ class Forum(db.Model, CRUDMixin):
                 days=flaskbb_config['TRACKER_LENGTH'])
 
         # fetch the unread posts in the forum
-        unread_count = Topic.query.\
-            outerjoin(TopicsRead,
-                      db.and_(TopicsRead.topic_id == Topic.id,
-                              TopicsRead.user_id == user.id)).\
-            outerjoin(ForumsRead,
-                      db.and_(ForumsRead.forum_id == Topic.forum_id,
-                              ForumsRead.user_id == user.id)).\
-            filter(Topic.forum_id == self.id,
-                   Topic.last_updated > read_cutoff,
-                   db.or_(TopicsRead.last_read == None,  # noqa: E711
-                          TopicsRead.last_read < Topic.last_updated),
-                   db.or_(ForumsRead.last_read == None,  # noqa: E711
-                          ForumsRead.last_read < Topic.last_updated)).\
-            count()
+        unread_count = (
+            Topic.query.outerjoin(
+                TopicsRead,
+                db.and_(
+                    TopicsRead.topic_id == Topic.id, TopicsRead.user_id == user.id
+                ),
+            )
+            .outerjoin(
+                ForumsRead,
+                db.and_(
+                    ForumsRead.forum_id == Topic.forum_id,
+                    ForumsRead.user_id == user.id,
+                ),
+            )
+            .filter(
+                Topic.forum_id == self.id,
+                Topic.last_updated > read_cutoff,
+                db.or_(
+                    TopicsRead.last_read is None,
+                    TopicsRead.last_read < Topic.last_updated,
+                ),
+                db.or_(
+                    ForumsRead.last_read is None,
+                    ForumsRead.last_read < Topic.last_updated,
+                ),
+            )
+            .count()
+        )
 
         # No unread topics available - trying to mark the forum as read
         if unread_count == 0:
@@ -1009,12 +1005,8 @@ class Forum(db.Model, CRUDMixin):
                              "topicsread.last_read. Everything is read.")
                 return False
 
-            # ForumRead Entry exists - Updating it because a new topic/post
-            # has been submitted and has read everything (obviously, else the
-            # unread_count would be useless).
             elif forumsread:
-                logger.debug("Updating existing ForumsRead '{}' object."
-                             .format(forumsread))
+                logger.debug(f"Updating existing ForumsRead '{forumsread}' object.")
                 forumsread.last_read = time_utcnow()
                 forumsread.save()
                 return True
@@ -1030,8 +1022,9 @@ class Forum(db.Model, CRUDMixin):
 
         # Nothing updated, because there are still more than 0 unread
         # topicsread
-        logger.debug("No ForumsRead object updated - there are still {} "
-                     "unread topics.".format(unread_count))
+        logger.debug(
+            f"No ForumsRead object updated - there are still {unread_count} unread topics."
+        )
         return False
 
     def recalculate(self, last_post=False):
@@ -1206,7 +1199,7 @@ class Category(db.Model, CRUDMixin):
         """Set to a unique key specific to the object in the database.
         Required for cache.memoize() to work across requests.
         """
-        return "<{} {}>".format(self.__class__.__name__, self.id)
+        return f"<{self.__class__.__name__} {self.id}>"
 
     def delete(self, users=None):
         """Deletes a category. If a list with involved user objects is passed,

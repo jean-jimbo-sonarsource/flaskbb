@@ -18,8 +18,7 @@ class FlaskBBForm(FlaskForm):
     def populate_errors(self, errors):
         for (attribute, reason) in errors:
             self.errors.setdefault(attribute, []).append(reason)
-            field = getattr(self, attribute, None)
-            if field:
+            if field := getattr(self, attribute, None):
                 field.errors.append(reason)
 
 
@@ -58,7 +57,7 @@ def populate_settings_form(form, settings):
 
 
 # TODO(anr): clean this up
-def generate_settings_form(settings):  # noqa: C901
+def generate_settings_form(settings):    # noqa: C901
     """Generates a settings form which includes field validation
     based on our Setting Schema."""
     class SettingsForm(FlaskBBForm):
@@ -95,7 +94,6 @@ def generate_settings_form(settings):  # noqa: C901
                 IntegerField(setting.name, validators=field_validators,
                              description=setting.description)
             )
-        # FloatField
         elif setting.value_type == SettingValueType.float:
             setattr(
                 SettingsForm, setting.key,
@@ -103,7 +101,6 @@ def generate_settings_form(settings):  # noqa: C901
                            description=setting.description)
             )
 
-        # StringField
         elif setting.value_type == SettingValueType.string:
             setattr(
                 SettingsForm, setting.key,
@@ -111,14 +108,9 @@ def generate_settings_form(settings):  # noqa: C901
                           description=setting.description)
             )
 
-        # SelectMultipleField
         elif setting.value_type == SettingValueType.selectmultiple:
             # if no coerce is found, it will fallback to unicode
-            if "coerce" in setting.extra:
-                coerce_to = setting.extra['coerce']
-            else:
-                coerce_to = str
-
+            coerce_to = setting.extra['coerce'] if "coerce" in setting.extra else str
             setattr(
                 SettingsForm, setting.key,
                 SelectMultipleField(
@@ -129,14 +121,9 @@ def generate_settings_form(settings):  # noqa: C901
                 )
             )
 
-        # SelectField
         elif setting.value_type == SettingValueType.select:
             # if no coerce is found, it will fallback to unicode
-            if "coerce" in setting.extra:
-                coerce_to = setting.extra['coerce']
-            else:
-                coerce_to = str
-
+            coerce_to = setting.extra['coerce'] if "coerce" in setting.extra else str
             setattr(
                 SettingsForm, setting.key,
                 SelectField(
@@ -146,7 +133,6 @@ def generate_settings_form(settings):  # noqa: C901
                     description=setting.description)
             )
 
-        # BooleanField
         elif setting.value_type == SettingValueType.boolean:
             setattr(
                 SettingsForm, setting.key,

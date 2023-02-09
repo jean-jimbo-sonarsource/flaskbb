@@ -80,9 +80,7 @@ class Login(MethodView):
         self.authentication_manager_factory = authentication_manager_factory
 
     def form(self):
-        if enforce_recaptcha(limiter):
-            return LoginRecaptchaForm()
-        return LoginForm()
+        return LoginRecaptchaForm() if enforce_recaptcha(limiter) else LoginForm()
 
     def get(self):
         return render_template("auth/login.html", form=self.form())
@@ -113,9 +111,11 @@ class Reauth(MethodView):
         self.reauthentication_factory = reauthentication_factory
 
     def get(self):
-        if not login_fresh():
-            return render_template("auth/reauth.html", form=self.form())
-        return redirect_or_next(current_user.url)
+        return (
+            redirect_or_next(current_user.url)
+            if login_fresh()
+            else render_template("auth/reauth.html", form=self.form())
+        )
 
     def post(self):
         form = self.form()
@@ -418,9 +418,7 @@ def flaskbb_load_blueprints(app):
     @auth.before_request
     def check_rate_limiting():
         """Check the the rate limits for each request for this blueprint."""
-        if not flaskbb_config["AUTH_RATELIMIT_ENABLED"]:
-            return None
-        return limiter.check()
+        return limiter.check() if flaskbb_config["AUTH_RATELIMIT_ENABLED"] else None
 
     @auth.errorhandler(429)
     def login_rate_limit_error(error):
@@ -429,6 +427,8 @@ def flaskbb_load_blueprints(app):
         return render_template(
             "errors/too_many_logins.html", timeout=error.description
         )
+
+    # Activate rate limiting on the whole blueprint
 
     # Activate rate limiting on the whole blueprint
     limiter.limit(
