@@ -40,8 +40,7 @@ def delete_settings_from_fixture(fixture):
         deleted_settings[group] = []
 
         for settings in settingsgroup[1]["settings"]:
-            setting = Setting.query.filter_by(key=settings[0]).first()
-            if setting:
+            if setting := Setting.query.filter_by(key=settings[0]).first():
                 deleted_settings[group].append(setting)
                 setting.delete()
 
@@ -67,17 +66,15 @@ def create_settings_from_fixture(fixture):
         created_settings[group] = []
 
         for settings in settingsgroup[1]["settings"]:
-            setting = Setting(
+            if setting := Setting(
                 key=settings[0],
                 value=settings[1]["value"],
                 value_type=settings[1]["value_type"],
                 name=settings[1]["name"],
                 description=settings[1]["description"],
-                extra=settings[1].get("extra", ""),     # Optional field
-
-                settingsgroup=group.key
-            )
-            if setting:
+                extra=settings[1].get("extra", ""),  # Optional field
+                settingsgroup=group.key,
+            ):
                 setting.save()
                 created_settings[group].append(setting)
 
@@ -103,17 +100,19 @@ def update_settings_from_fixture(fixture, overwrite_group=False,
 
         group = SettingsGroup.query.filter_by(key=settingsgroup[0]).first()
 
-        if (group is not None and overwrite_group) or group is None:
+        if (group is not None and overwrite_group):
 
-            if group is not None:
-                group.name = settingsgroup[1]["name"]
-                group.description = settingsgroup[1]["description"]
-            else:
-                group = SettingsGroup(
-                    key=settingsgroup[0],
-                    name=settingsgroup[1]["name"],
-                    description=settingsgroup[1]["description"]
-                )
+            group.name = settingsgroup[1]["name"]
+            group.description = settingsgroup[1]["description"]
+            group.save()
+
+        elif group is None:
+
+            group = SettingsGroup(
+                key=settingsgroup[0],
+                name=settingsgroup[1]["name"],
+                description=settingsgroup[1]["description"]
+            )
 
             group.save()
 
@@ -195,9 +194,13 @@ def create_user(username, password, email, groupname):
     else:
         group = Group.query.filter(getattr(Group, groupname) == True).first()
 
-    user = User.create(username=username, password=password, email=email,
-                       primary_group_id=group.id, activated=True)
-    return user
+    return User.create(
+        username=username,
+        password=password,
+        email=email,
+        primary_group_id=group.id,
+        activated=True,
+    )
 
 
 def update_user(username, password, email, groupname):
@@ -268,8 +271,8 @@ def create_test_data(users=5, categories=2, forums=2, topics=1, posts=1):
 
     # create 5 users
     for u in range(1, users + 1):
-        username = "test%s" % u
-        email = "test%s@example.org" % u
+        username = f"test{u}"
+        email = f"test{u}@example.org"
         user = User(username=username, password="test", email=email)
         user.primary_group_id = u
         user.activated = True
@@ -282,7 +285,7 @@ def create_test_data(users=5, categories=2, forums=2, topics=1, posts=1):
     # create 2 categories
     with db.session.no_autoflush:
         for i in range(1, categories + 1):
-            category_title = "Test Category %s" % i
+            category_title = f"Test Category {i}"
             category = Category(title=category_title,
                                 description="Test Description")
             category.save()
@@ -293,7 +296,7 @@ def create_test_data(users=5, categories=2, forums=2, topics=1, posts=1):
                 if i == 2:
                     j += 2
 
-                forum_title = "Test Forum %s %s" % (j, i)
+                forum_title = f"Test Forum {j} {i}"
                 forum = Forum(title=forum_title, description="Test Description",
                               category_id=i)
                 forum.save()
@@ -301,7 +304,7 @@ def create_test_data(users=5, categories=2, forums=2, topics=1, posts=1):
 
                 for _ in range(1, topics + 1):
                     # create a topic
-                    topic = Topic(title="Test Title %s" % j)
+                    topic = Topic(title=f"Test Title {j}")
                     post = Post(content="Test Content")
                     topic.save(post=post, user=user1, forum=forum)
                     data_created['topics'] += 1
@@ -343,7 +346,7 @@ def insert_bulk_data(topic_count=10, post_count=100):
             last_post_id += 1
 
             # create a topic
-            topic = Topic(title="Test Title %s" % i)
+            topic = Topic(title=f"Test Title {i}")
             post = Post(content="First Post")
             topic.save(post=post, user=user1, forum=forum)
             created_topics += 1
@@ -385,9 +388,10 @@ def create_latest_db(target="default@head"):
 
 def has_migrations(plugin):
     migrations_path = os.path.join(plugin.__path__[0], "migrations")
-    if os.path.exists(migrations_path) and len(os.listdir(migrations_path)) != 0:
-        return True
-    return False
+    return bool(
+        os.path.exists(migrations_path)
+        and len(os.listdir(migrations_path)) != 0
+    )
 
 
 def run_plugin_migrations(plugins=None):
@@ -403,12 +407,13 @@ def run_plugin_migrations(plugins=None):
         plugin_name = current_app.pluggy.get_name(plugin)
 
         if not has_migrations(plugin):
-            logger.debug("No migrations found for plugin %s" % plugin_name)
+            logger.debug(f"No migrations found for plugin {plugin_name}")
             continue
 
         try:
-            alembic.upgrade(target="{}@head".format(plugin_name))
+            alembic.upgrade(target=f"{plugin_name}@head")
         except CommandError as exc:
-            logger.debug("Couldn't run migrations for plugin {} because of "
-                         "following exception: ".format(plugin_name),
-                         exc_info=exc)
+            logger.debug(
+                f"Couldn't run migrations for plugin {plugin_name} because of following exception: ",
+                exc_info=exc,
+            )

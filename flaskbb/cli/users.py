@@ -37,8 +37,9 @@ def new_user(username, email, password, group):
     try:
         user = prompt_save_user(username, email, password, group)
 
-        click.secho("[+] User {} with Email {} in Group {} created.".format(
-            user.username, user.email, user.primary_group.name), fg="cyan"
+        click.secho(
+            f"[+] User {user.username} with Email {user.email} in Group {user.primary_group.name} created.",
+            fg="cyan",
         )
     except IntegrityError:
         raise FlaskBBCLIError("Couldn't create the user because the "
@@ -58,10 +59,11 @@ def change_user(username, email, password, group):
 
     user = prompt_save_user(username, email, password, group, only_update=True)
     if user is None:
-        raise FlaskBBCLIError("The user with username {} does not exist."
-                              .format(username), fg="red")
+        raise FlaskBBCLIError(
+            f"The user with username {username} does not exist.", fg="red"
+        )
 
-    click.secho("[+] User {} updated.".format(user.username), fg="cyan")
+    click.secho(f"[+] User {user.username} updated.", fg="cyan")
 
 
 @users.command("delete")
@@ -78,12 +80,13 @@ def delete_user(username, force):
 
     user = User.query.filter_by(username=username).first()
     if user is None:
-        raise FlaskBBCLIError("The user with username {} does not exist."
-                              .format(username), fg="red")
+        raise FlaskBBCLIError(
+            f"The user with username {username} does not exist.", fg="red"
+        )
 
     if not force and not \
             click.confirm(click.style("Are you sure?", fg="magenta")):
         sys.exit(0)
 
     user.delete()
-    click.secho("[+] User {} deleted.".format(user.username), fg="cyan")
+    click.secho(f"[+] User {user.username} deleted.", fg="cyan")

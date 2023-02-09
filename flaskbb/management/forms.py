@@ -414,11 +414,10 @@ class ForumForm(FlaskForm):
     submit = SubmitField(_("Save"))
 
     def validate_external(self, field):
-        if hasattr(self, "forum"):
-            if self.forum.topics.count() > 0:
-                raise ValidationError(_("You cannot convert a forum that "
-                                        "contains topics into an "
-                                        "external link."))
+        if hasattr(self, "forum") and self.forum.topics.count() > 0:
+            raise ValidationError(_("You cannot convert a forum that "
+                                    "contains topics into an "
+                                    "external link."))
 
     def validate_show_moderators(self, field):
         if field.data and not self.moderators.data:

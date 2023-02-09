@@ -39,9 +39,9 @@ def list_plugins():
         for plugin in enabled_plugins:
             p_mod = plugin[0]
             p_dist = plugin[1]
-            click.secho("\t- {}\t({}), version {}".format(
-                current_app.pluggy.get_name(p_mod).title(), p_dist.key,
-                p_dist.version), bold=True
+            click.secho(
+                f"\t- {current_app.pluggy.get_name(p_mod).title()}\t({p_dist.key}), version {p_dist.version}",
+                bold=True,
             )
 
     disabled_plugins = current_app.pluggy.list_disabled_plugins()
@@ -50,9 +50,9 @@ def list_plugins():
         for plugin in disabled_plugins:
             p_mod = plugin[0]
             p_dist = plugin[1]
-            click.secho("\t- {}\t({}), version {}".format(
-                p_mod.title(), p_dist.key,
-                p_dist.version), bold=True
+            click.secho(
+                f"\t- {p_mod.title()}\t({p_dist.key}), version {p_dist.version}",
+                bold=True,
             )
 
 
@@ -65,11 +65,11 @@ def enable_plugin(plugin_name):
     plugin = PluginRegistry.query.filter_by(name=plugin_name).first_or_404()
 
     if plugin.enabled:
-        click.secho("Plugin '{}' is already enabled.".format(plugin.name))
+        click.secho(f"Plugin '{plugin.name}' is already enabled.")
 
     plugin.enabled = True
     plugin.save()
-    click.secho("[+] Plugin '{}' enabled.".format(plugin.name), fg="green")
+    click.secho(f"[+] Plugin '{plugin.name}' enabled.", fg="green")
 
 
 @plugins.command("disable")
@@ -81,11 +81,11 @@ def disable_plugin(plugin_name):
     plugin = PluginRegistry.query.filter_by(name=plugin_name).first_or_404()
 
     if not plugin.enabled:
-        click.secho("Plugin '{}' is already disabled.".format(plugin.name))
+        click.secho(f"Plugin '{plugin.name}' is already disabled.")
 
     plugin.enabled = False
     plugin.save()
-    click.secho("[+] Plugin '{}' disabled.".format(plugin.name), fg="green")
+    click.secho(f"[+] Plugin '{plugin.name}' disabled.", fg="green")
 
 
 @plugins.command("install")
@@ -98,8 +98,10 @@ def install(plugin_name, force):
     plugin = PluginRegistry.query.filter_by(name=plugin_name).first_or_404()
 
     if not plugin.enabled:
-        click.secho("[+] Can't install disabled plugin. "
-                    "Enable '{}' Plugin first.".format(plugin.name), fg="red")
+        click.secho(
+            f"[+] Can't install disabled plugin. Enable '{plugin.name}' Plugin first.",
+            fg="red",
+        )
         sys.exit(0)
 
     if plugin.is_installable:
@@ -137,7 +139,7 @@ def cleanup():
     if len(deleted_plugins) > 0:
         click.secho("[+] Removed following zombie plugins from FlaskBB: ",
                     fg="green", nl=False)
-        click.secho("{}".format(", ".join(deleted_plugins)))
+        click.secho(f'{", ".join(deleted_plugins)}')
     else:
         click.secho("[+] No zombie plugins found.", fg="green")
 
@@ -164,5 +166,4 @@ def new_plugin(template, out_dir, force):
                                default=os.path.abspath("."))
 
     r = cookiecutter(template, output_dir=out_dir, overwrite_if_exists=force)
-    click.secho("[+] Created new plugin in {}".format(r),
-                fg="green", bold=True)
+    click.secho(f"[+] Created new plugin in {r}", fg="green", bold=True)

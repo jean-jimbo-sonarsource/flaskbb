@@ -907,7 +907,7 @@ _emoji_replacement_mapping = {
 
 def _replace_emoji(line):
     for shortcode, characters in _emoji_replacement_mapping.items():
-        line = line.replace(':{}:'.format(shortcode), characters)
+        line = line.replace(f':{shortcode}:', characters)
     return line
 
 
@@ -918,7 +918,7 @@ def _unreplace_emoji(line):
             key=lambda t: len(t[1]),
             reverse=True
     ):
-        line = line.replace(character, ':{}:'.format(shortcode))
+        line = line.replace(character, f':{shortcode}:')
     return line
 
 
@@ -936,7 +936,7 @@ def do_the_thing(func):
         for row in conn.execute(table.select()):
             content = getattr(row, column_name)
             new_content = func(content)
-            if not new_content == content:
+            if new_content != content:
                 conn.execute(
                     table.update().where(
                         table.c.id == row.id

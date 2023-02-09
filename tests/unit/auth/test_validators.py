@@ -42,7 +42,7 @@ def test_raises_if_username_too_long():
 
 
 def test_raises_if_username_in_blacklist():
-    requirements = UsernameRequirements(min=1, max=100, blacklist=set(['no']))
+    requirements = UsernameRequirements(min=1, max=100, blacklist={'no'})
     validator = UsernameValidator(requirements)
 
     registration = UserRegistrationInfo(

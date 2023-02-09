@@ -83,10 +83,7 @@ class FlaskBBGroup(FlaskGroup):
 
 def make_app():
     ctx = click.get_current_context(silent=True)
-    script_info = None
-    if ctx is not None:
-        script_info = ctx.obj
-
+    script_info = ctx.obj if ctx is not None else None
     config_file = getattr(script_info, "config_file", None)
     instance_path = getattr(script_info, "instance_path", None)
     return create_app(config_file, instance_path)
@@ -318,12 +315,10 @@ def upgrade(all_latest, fixture, force):
 
     if fixture or all_latest:
         try:
-            settings = import_string("flaskbb.fixtures.{}".format(fixture))
+            settings = import_string(f"flaskbb.fixtures.{fixture}")
             settings = settings.fixture
         except ImportError:
-            raise FlaskBBCLIError(
-                "{} fixture is not available".format(fixture), fg="red"
-            )
+            raise FlaskBBCLIError(f"{fixture} fixture is not available", fg="red")
 
         click.secho("[+] Updating fixtures...", fg="cyan")
         count = update_settings_from_fixture(
@@ -380,7 +375,7 @@ def shell_command():
         with open(startup, "r") as f:
             eval(compile(f.read(), startup, "exec"), ctx)
 
-    ctx.update(current_app.make_shell_context())
+    ctx |= current_app.make_shell_context()
 
     try:
         import IPython
@@ -510,9 +505,7 @@ def generate_config(development, output, force):
         config_path = prompt_config_path(config_path)
 
     if force and os.path.exists(config_path):
-        click.secho(
-            "Overwriting existing config file: {}".format(config_path), fg="yellow"
-        )
+        click.secho(f"Overwriting existing config file: {config_path}", fg="yellow")
 
     if development:
         default_conf["is_debug"] = True

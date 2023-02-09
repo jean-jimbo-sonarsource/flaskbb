@@ -78,11 +78,7 @@ def deprecated(message="", category=RemovedInFlaskBB3):
 
         docstring = f.__doc__
 
-        if docstring:
-            docstring = "\n".join([docstring, warning])
-        else:
-            docstring = warning
-
+        docstring = "\n".join([docstring, warning]) if docstring else warning
         f.__doc__ = docstring
 
         @wraps(f)

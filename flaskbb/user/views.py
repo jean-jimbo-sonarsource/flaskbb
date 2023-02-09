@@ -49,22 +49,22 @@ class UserSettings(MethodView):
         return self.render()
 
     def post(self):
-        if self.form.validate_on_submit():
-            try:
-                self.settings_update_handler.apply_changeset(
-                    current_user, self.form.as_change()
-                )
-            except StopValidation as e:
-                self.form.populate_errors(e.reasons)
-                return self.render()
-            except PersistenceError:
-                logger.exception("Error while updating user settings")
-                flash(_("Error while updating user settings"), "danger")
-                return self.redirect()
-
-            flash(_("Settings updated."), "success")
+        if not self.form.validate_on_submit():
+            return self.render()
+        try:
+            self.settings_update_handler.apply_changeset(
+                current_user, self.form.as_change()
+            )
+        except StopValidation as e:
+            self.form.populate_errors(e.reasons)
+            return self.render()
+        except PersistenceError:
+            logger.exception("Error while updating user settings")
+            flash(_("Error while updating user settings"), "danger")
             return self.redirect()
-        return self.render()
+
+        flash(_("Settings updated."), "success")
+        return self.redirect()
 
     def render(self):
         return render_template("user/general_settings.html", form=self.form)
@@ -83,22 +83,22 @@ class ChangePassword(MethodView):
         return self.render()
 
     def post(self):
-        if self.form.validate_on_submit():
-            try:
-                self.password_update_handler.apply_changeset(
-                    current_user, self.form.as_change()
-                )
-            except StopValidation as e:
-                self.form.populate_errors(e.reasons)
-                return self.render()
-            except PersistenceError:
-                logger.exception("Error while changing password")
-                flash(_("Error while changing password"), "danger")
-                return self.redirect()
-
-            flash(_("Password updated."), "success")
+        if not self.form.validate_on_submit():
+            return self.render()
+        try:
+            self.password_update_handler.apply_changeset(
+                current_user, self.form.as_change()
+            )
+        except StopValidation as e:
+            self.form.populate_errors(e.reasons)
+            return self.render()
+        except PersistenceError:
+            logger.exception("Error while changing password")
+            flash(_("Error while changing password"), "danger")
             return self.redirect()
-        return self.render()
+
+        flash(_("Password updated."), "success")
+        return self.redirect()
 
     def render(self):
         return render_template("user/change_password.html", form=self.form)
@@ -117,22 +117,22 @@ class ChangeEmail(MethodView):
         return self.render()
 
     def post(self):
-        if self.form.validate_on_submit():
-            try:
-                self.update_email_handler.apply_changeset(
-                    current_user, self.form.as_change()
-                )
-            except StopValidation as e:
-                self.form.populate_errors(e.reasons)
-                return self.render()
-            except PersistenceError:
-                logger.exception("Error while updating email")
-                flash(_("Error while updating email"), "danger")
-                return self.redirect()
-
-            flash(_("Email address updated."), "success")
+        if not self.form.validate_on_submit():
+            return self.render()
+        try:
+            self.update_email_handler.apply_changeset(
+                current_user, self.form.as_change()
+            )
+        except StopValidation as e:
+            self.form.populate_errors(e.reasons)
+            return self.render()
+        except PersistenceError:
+            logger.exception("Error while updating email")
+            flash(_("Error while updating email"), "danger")
             return self.redirect()
-        return self.render()
+
+        flash(_("Email address updated."), "success")
+        return self.redirect()
 
     def render(self):
         return render_template("user/change_email.html", form=self.form)
@@ -152,22 +152,22 @@ class ChangeUserDetails(MethodView):
 
     def post(self):
 
-        if self.form.validate_on_submit():
-            try:
-                self.details_update_handler.apply_changeset(
-                    current_user, self.form.as_change()
-                )
-            except StopValidation as e:
-                self.form.populate_errors(e.reasons)
-                return self.render()
-            except PersistenceError:
-                logger.exception("Error while updating user details")
-                flash(_("Error while updating user details"), "danger")
-                return self.redirect()
-
-            flash(_("User details updated."), "success")
+        if not self.form.validate_on_submit():
+            return self.render()
+        try:
+            self.details_update_handler.apply_changeset(
+                current_user, self.form.as_change()
+            )
+        except StopValidation as e:
+            self.form.populate_errors(e.reasons)
+            return self.render()
+        except PersistenceError:
+            logger.exception("Error while updating user details")
+            flash(_("Error while updating user details"), "danger")
             return self.redirect()
-        return self.render()
+
+        flash(_("User details updated."), "success")
+        return self.redirect()
 
     def render(self):
         return render_template("user/change_user_details.html", form=self.form)
